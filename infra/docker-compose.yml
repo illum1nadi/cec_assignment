@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  mongo:
-    image: mongo:5
-    restart: unless-stopped
-    volumes:
-      - mongo-data:/data/db
+  # mongo:
+  #   image: mongo:5
+  #   restart: unless-stopped
+  #   volumes:
+  #     - mongo-data:/data/db
 
   auth:
     build:
@@ -14,8 +14,8 @@ services:
       - ../auth-service/.env
     ports:
       - '4000:4000'
-    depends_on:
-      - mongo
+    # depends_on:
+    #   - mongo
     restart: unless-stopped
 
   user:
@@ -27,7 +27,7 @@ services:
       - '4001:4001'
     depends_on:
       - auth
-      - mongo
+      # - mongo
     restart: unless-stopped
 
 volumes:
