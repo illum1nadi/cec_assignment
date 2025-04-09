@@ -30,5 +30,28 @@ services:
       # - mongo
     restart: unless-stopped
 
+  post:
+    build:
+      context: ../post-service
+    env_file:
+      - ../post-service/.env
+    ports:
+      - '4002:4002'
+    depends_on:
+      - auth
+      - user
+      # - mongo
+    restart: unless-stopped
+  notification:
+    build:
+      context: ../notification-service
+    env_file:
+      - ../notification-service/.env
+    ports:
+      - '4003:4003'
+    # depends_on:
+    #   # - mongo
+    restart: unless-stopped
+
 volumes:
   mongo-data:
