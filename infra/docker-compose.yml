@@ -1,33 +1,13 @@
 version: '3.8'
 
 services:
-  # mongo:
-  #   image: mongo:5
-  #   restart: unless-stopped
-  #   volumes:
-  #     - mongo-data:/data/db
-
-  auth:
-    build:
-      context: ../auth-service
-    env_file:
-      - ../auth-service/.env
-    ports:
-      - '4000:4000'
-    # depends_on:
-    #   - mongo
-    restart: unless-stopped
-
   user:
     build:
       context: ../user-service
     env_file:
       - ../user-service/.env
     ports:
-      - '4001:4001'
-    depends_on:
-      - auth
-      # - mongo
+      - "4000:4000"
     restart: unless-stopped
 
   post:
@@ -36,22 +16,27 @@ services:
     env_file:
       - ../post-service/.env
     ports:
-      - '4002:4002'
+      - "4001:4001"
     depends_on:
-      - auth
       - user
-      # - mongo
     restart: unless-stopped
+
   notification:
     build:
       context: ../notification-service
     env_file:
       - ../notification-service/.env
     ports:
-      - '4003:4003'
-    # depends_on:
-    #   # - mongo
+      - "4002:4002"
     restart: unless-stopped
 
-volumes:
-  mongo-data:
+  frontend:
+    build:
+      context: ../frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - user
+      - post
+      - notification
+    restart: unless-stopped

@@ -1,28 +1,26 @@
+// user-service/src/index.js
 require('dotenv').config();
-const express = require('express');
+const express  = require('express');
 const mongoose = require('mongoose');
+const cors     = require('cors');
 
+const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
-// 1️⃣ Connect to Mongo
 mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
+  serverSelectionTimeoutMS: 5000
 })
 .then(() => console.log('🗄️  UserDB connected'))
-.catch(err => console.error(err));
+.catch(err => console.error('❌ UserDB connection error:', err));
 
-// 2️⃣ Mount routes
+app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 
-// 3️⃣ Health check
 app.get('/health', (req, res) => res.send('OK'));
 
-// 4️⃣ Start
-const port = process.env.PORT;
-app.listen(port, () =>
-  console.log(`${process.env.SERVICE_NAME} listening on ${port}`)
-);
+const port = process.env.PORT || 4000;
+app.listen(port, () => console.log(`UserService listening on ${port}`));

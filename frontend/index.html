@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Social Demo</title></head>
+<body>
+  <h1>Social Demo</h1>
+
+  <div id="auth">
+    <h2>Register / Login</h2>
+    <input id="email" placeholder="Email"><br>
+    <input id="password" type="password" placeholder="Password"><br>
+    <input id="name" placeholder="Name (register only)"><br>
+    <input id="bio" placeholder="Bio"><br>
+    <input id="avatarUrl" placeholder="Avatar URL"><br>
+    <button onclick="register()">Register</button>
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div id="app" style="display:none">
+    <h2>Welcome, <span id="userName"></span></h2>
+
+    <h3>New Post</h3>
+    <textarea id="postContent" placeholder="What's on your mind?"></textarea><br>
+    <button onclick="createPost()">Post</button>
+
+    <h3>Your Feed</h3>
+    <pre id="postsResult">[]</pre>
+
+    <h3>Notifications</h3>
+    <pre id="notificationsResult">[]</pre>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
