@@ -1,54 +1,57 @@
 require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
+const express      = require('express');
+const cors         = require('cors');
+const mongoose     = require('mongoose');
 const EventEmitter = require('events');
-const notifRoutes = require('./routes/notifications');
+const notifRoutes  = require('./routes/notifications');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Create an emitter for new notifications
+// SSE emitter for notifications
 const notifEmitter = new EventEmitter();
 app.locals.notifEmitter = notifEmitter;
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  serverSelectionTimeoutMS: 5000
-})
-.then(() => console.log('🗄️  NotifDB connected'))
-.catch(err => console.error('❌ NotifDB connection error:', err));
+// SSE: send last hour + live updates
+app.get('/notifications/stream/:userId', async (req, res) => {
+  const userId = req.params.userId;
 
-// SSE endpoint for notifications per user
-app.get('/notifications/stream/:userId', (req, res) => {
   res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
+    'Content-Type':  'text/event-stream',
     'Cache-Control': 'no-cache',
-    Connection: 'keep-alive'
+    Connection:      'keep-alive'
   });
 
-  const onNotif = notif => {
-    if (notif.userId.toString() === req.params.userId) {
-      res.write(`data: ${JSON.stringify(notif)}\n\n`);
+  // 1) Send last hour’s notifications
+  const oneHourAgo = new Date(Date.now() - 60*60*1000);
+  const recent = await mongoose.model('Notification').find({
+    userId,
+    createdAt: { $gte: oneHourAgo }
+  }).sort({ createdAt: 1 }).lean();
+  recent.forEach(n => res.write(`data: ${JSON.stringify(n)}\n\n`));
+
+  // 2) Subscribe to new notifications
+  const onNotify = n => {
+    if (n.userId === userId) {
+      res.write(`data: ${JSON.stringify(n)}\n\n`);
     }
   };
-
-  app.locals.notifEmitter.on('new_notif', onNotif);
+  notifEmitter.on('notify', onNotify);
 
   req.on('close', () => {
-    app.locals.notifEmitter.off('new_notif', onNotif);
+    notifEmitter.off('notify', onNotify);
   });
 });
 
 // Mount REST routes
 app.use('/', notifRoutes);
 
-// Health check
 app.get('/health', (req, res) => res.send('OK'));
 
-// Start server
-const port = process.env.PORT || 4003;
-app.listen(port, () =>
-  console.log(`NotificationService listening on port ${port}`)
-);
+mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: 5000 })
+  .then(() => console.log('🗄️  NotifDB connected'))
+  .catch(err => console.error('❌ NotifDB connection error:', err));
+
+const port = process.env.PORT || 4002;
+app.listen(port, () => console.log(`NotificationService listening on port ${port}`));

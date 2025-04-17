@@ -1,32 +1,55 @@
 <!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Social Demo</title></head>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Social Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 <body>
-  <h1>Social Demo</h1>
+  <div class="container">
+    <header>
+      <h1>Social Hub</h1>
+    </header>
 
-  <div id="auth">
-    <h2>Register / Login</h2>
-    <input id="email" placeholder="Email"><br>
-    <input id="password" type="password" placeholder="Password"><br>
-    <input id="name" placeholder="Name (register only)"><br>
-    <input id="bio" placeholder="Bio"><br>
-    <input id="avatarUrl" placeholder="Avatar URL"><br>
-    <button onclick="register()">Register</button>
-    <button onclick="login()">Login</button>
-  </div>
+    <!-- Auth Panel -->
+    <div id="auth" class="card auth-panel">
+      <h2>Sign In</h2>
+      <input id="email" type="email" placeholder="Email" />
+      <input id="password" type="password" placeholder="Password" />
+      <button onclick="login()">Login</button>
 
-  <div id="app" style="display:none">
-    <h2>Welcome, <span id="userName"></span></h2>
+      <hr />
 
-    <h3>New Post</h3>
-    <textarea id="postContent" placeholder="What's on your mind?"></textarea><br>
-    <button onclick="createPost()">Post</button>
+      <h2>Register</h2>
+      <input id="name" type="text" placeholder="Name" />
+      <input id="bio" type="text" placeholder="Bio" />
+      <input id="avatarUrl" type="text" placeholder="Avatar URL" />
+      <button onclick="register()">Register</button>
+    </div>
 
-    <h3>Your Feed</h3>
-    <pre id="postsResult">[]</pre>
+    <!-- App Panel -->
+    <div id="app" class="hidden app-panel">
+      <aside class="sidebar card">
+        <div class="user-info">
+          <span id="userName"></span>
+          <button onclick="logout()">Logout</button>
+        </div>
 
-    <h3>Notifications</h3>
-    <pre id="notificationsResult">[]</pre>
+        <div class="new-post">
+          <textarea id="postContent" placeholder="What's on your mind?"></textarea>
+          <button onclick="createPost()">Post</button>
+        </div>
+
+        <h3>Notifications</h3>
+        <ul id="notificationsList" class="list"></ul>
+      </aside>
+
+      <main class="feed card">
+        <h3>Feed</h3>
+        <ul id="postsList" class="list"></ul>
+      </main>
+    </div>
   </div>
 
   <script src="script.js"></script>

@@ -2,13 +2,12 @@ const mongoose = require('mongoose');
 
 const NotificationSchema = new mongoose.Schema({
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref:  'User',
+    type: String,
     required: true
   },
   type: {
     type: String,
-    enum: ['new_follower', 'post_like', 'comment', 'new_post'],  // <-- added 'new_post'
+    enum: ['new_post'],
     required: true
   },
   payload: {

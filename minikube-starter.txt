@@ -1,0 +1,54 @@
+# 1) Start the cluster
+minikube start
+
+# 2) Point your shell at Minikube’s Docker daemon
+eval $(minikube docker-env)
+
+# 3) Rebuild your images into Minikube
+docker build -t user-service:latest         ./user-service
+docker build -t post-service:latest         ./post-service
+docker build -t notification-service:latest ./notification-service
+docker build -t frontend:latest             ./frontend
+
+# 4) Re‑deploy your k8s manifests
+kubectl apply -f k8s/
+
+# 5) Watch until pods are Running
+kubectl get pods -w
+
+# 6) Open your frontend in the browser
+minikube service frontend --url
+
+
+eval $(minikube docker-env --unset)
+docker context use default
+
+
+# === For Kubernetes (Minikube) ===
+
+# 1) Point Docker at Minikube’s daemon
+eval $(minikube docker-env)
+
+# 2) Rebuild all service images
+docker build -t user-service:latest         ./user-service
+docker build -t post-service:latest         ./post-service
+docker build -t notification-service:latest ./notification-service
+docker build -t frontend:latest             ./frontend
+
+# 3) Re‑apply your k8s manifests (in case you tweaked any)
+kubectl apply -f k8s/
+
+# 4) Roll out the new images
+kubectl rollout restart deployment/user-service
+kubectl rollout restart deployment/post-service
+kubectl rollout restart deployment/notification-service
+kubectl rollout restart deployment/frontend
+
+# 5) (Optional) Watch rollout status
+kubectl rollout status deployment/user-service
+kubectl rollout status deployment/post-service
+kubectl rollout status deployment/notification-service
+kubectl rollout status deployment/frontend
+
+# 6) Get your frontend URL
+minikube service frontend --url

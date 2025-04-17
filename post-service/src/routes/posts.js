@@ -4,93 +4,64 @@ const auth    = require('../middleware/auth');
 const Post    = require('../models/Post');
 
 const router = express.Router();
-
 const USER_URL  = process.env.USER_URL;
 const NOTIF_URL = process.env.NOTIF_URL;
 
-// Create Post
+// Create Post (auth required)
 router.post('/', auth, async (req, res) => {
   try {
-    // 1) Save the post
-    const post = new Post({
-      authorId: req.user.userId,
-      content:  req.body.content,
-      mediaUrls:req.body.mediaUrls || []
-    });
-    await post.save();
+    // 1) Build post data
+    const postData = {
+      authorId:  req.user.userId,
+      content:   req.body.content,
+      mediaUrls: req.body.mediaUrls || []
+    };
 
-    // 2) Lookup poster’s name
+    // 2) Fetch & attach author's name
     const { data: poster } = await axios.get(
       `${USER_URL}/users/me`,
       { headers: { Authorization: req.headers.authorization } }
     );
-    const posterName = poster.name || poster.email;
+    postData.authorName = poster.name || poster.email;
 
-    // 3) List all *other* users
+    // 3) Save to DB
+    const post = await Post.create(postData);
+
+    // 4) Notify everyone except the author
     const { data: users } = await axios.get(
       `${USER_URL}/users/all`,
       { headers: { Authorization: req.headers.authorization } }
     );
+    const message = `${postData.authorName} posted: "${post.content}"`;
+    await Promise.all(
+      users
+        .filter(u => u._id !== req.user.userId)
+        .map(u =>
+          axios.post(`${NOTIF_URL}/notify`, {
+            userId:  u._id,
+            type:    'new_post',
+            payload: { message }
+          })
+        )
+    );
 
-    // 4) Notify each other user
-    const message = `${posterName} posted at ${post.createdAt}: "${post.content}"`;
-    await Promise.all(users.map(u =>
-      axios.post(`${NOTIF_URL}/notify`, {
-        userId:  u._id,
-        type:    'new_post',
-        payload: { message }
-      })
-    ));
+    // 5) Emit to SSE
+    req.app.locals.postEmitter.emit('new_post', post);
 
-    // 5) Emit for real‑time SSE (only for others)
-    req.app.locals.postEmitter.emit('new_post', {
-      content:    post.content,
-      mediaUrls:  post.mediaUrls,
-      createdAt:  post.createdAt,
-      authorName: posterName
-    });
-
-    // 6) Respond with enriched post
-    res.status(201).json({
-      content:    post.content,
-      mediaUrls:  post.mediaUrls,
-      createdAt:  post.createdAt,
-      authorName: posterName
-    });
+    // 6) Return created post
+    res.status(201).json(post);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get Feed for User (excludes own posts)
-router.get('/feed', auth, async (req, res) => {
+// Get Feed (public, returns all posts)
+router.get('/feed', async (req, res) => {
   try {
-    // 1) Who they follow?
-    const { data: profile } = await axios.get(
-      `${USER_URL}/users/me`,
-      { headers: { Authorization: req.headers.authorization } }
-    );
-    const following = profile.following || [];
-
-    // 2) Fetch posts by those they follow, excluding their own
-    const raw = await Post.find({
-      authorId: { $in: following, $nin: [req.user.userId] }
-    })
-    .sort({ createdAt: -1 })
-    .lean();
-
-    // 3) Enrich with authorName
-    const feed = await Promise.all(raw.map(async p => {
-      const { data: u } = await axios.get(`${USER_URL}/users/${p.authorId}`);
-      return {
-        content:    p.content,
-        mediaUrls:  p.mediaUrls,
-        createdAt:  p.createdAt,
-        authorName: u.name || u.email
-      };
-    }));
-
-    res.json(feed);
+    const posts = await Post.find()
+      .sort({ createdAt: -1 })
+      .lean();
+    res.json(posts);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
